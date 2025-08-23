@@ -1,0 +1,20 @@
+# Security files
+SECURITY_IMPLEMENTATION.md
+SECURITY_REQUIREMENTS_MAPPING.md
+
+# API files
+apiCall.py
+
+# Environment files
+.env
+
+# Claude Code files
+.claude/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Log files
+*.log

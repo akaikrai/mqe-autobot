@@ -1,0 +1,20 @@
+# Required Slack settings
+SLACK_BOT_TOKEN=xoxb-your-bot-token
+SLACK_APP_TOKEN=xapp-your-app-token
+SLACK_SIGNING_SECRET=your-slack-signing-secret
+
+# DIG AI Integration
+DIGAI_API_KEY=your-dig-api-key
+DIG_MODEL_ID=42
+
+# Message handling settings (optional)
+MESSAGE_CACHE_TTL=60
+THREAD_TIMEOUT=300
+
+# Security settings (optional)
+ADMIN_USERS=U1234567890,U0987654321
+
+# Email-based access control (optional)
+# If WHITELISTED_EMAILS is set, only users with these email addresses can use the bot
+# Leave empty or unset to allow all users in the Slack workspace
+WHITELISTED_EMAILS=user1@company.com,user2@company.com,admin@company.com

@@ -1,0 +1,14 @@
+2025-08-21 10:20:13,369 - security.content_filter - INFO - Content filter initialized with 11 patterns
+2025-08-21 10:20:13,369 - auth.admin_manager - INFO - Admin manager initialized with 2 admin users
+2025-08-21 10:25:13,978 - security.content_filter - INFO - Content filter initialized with 11 patterns
+2025-08-21 10:25:13,979 - auth.admin_manager - INFO - Admin manager initialized with 2 admin users
+2025-08-21 10:25:14,396 - __main__ - INFO - Starting AI Assistant Bot...
+2025-08-21 10:25:15,264 - slack_bolt.App - INFO - A new session has been established (session id: 7947ea99-2c14-4415-b2c3-3cab17fb8a03)
+2025-08-21 10:25:15,265 - slack_bolt.App - INFO - ⚡️ Bolt app is running!
+2025-08-21 10:25:15,328 - slack_bolt.App - INFO - Starting to receive messages from a new connection (session id: 7947ea99-2c14-4415-b2c3-3cab17fb8a03)
+2025-08-21 10:25:36,210 - security.content_filter - INFO - Content filter initialized with 11 patterns
+2025-08-21 10:25:36,210 - auth.admin_manager - INFO - Admin manager initialized with 2 admin users
+2025-08-21 10:25:36,569 - __main__ - INFO - Starting AI Assistant Bot...
+2025-08-21 10:25:37,401 - slack_bolt.App - INFO - A new session has been established (session id: 8ce4897e-97d1-4450-b239-190de2af03b5)
+2025-08-21 10:25:37,402 - slack_bolt.App - INFO - ⚡️ Bolt app is running!
+2025-08-21 10:25:37,403 - slack_bolt.App - INFO - Starting to receive messages from a new connection (session id: 8ce4897e-97d1-4450-b239-190de2af03b5)
