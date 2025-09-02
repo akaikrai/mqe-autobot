@@ -207,18 +207,3 @@ Key Python packages used:
 ### Logs
 
 Check the console output for detailed logging information. The bot provides comprehensive logging for debugging.
-
-## Contributing
-
-Contributions are welcome! Please ensure all changes maintain the security and formatting standards.
-
-## Security Notes
-
-- Never commit the `.env` file or any files containing API keys
-- The `.gitignore` file is configured to exclude sensitive files
-- All sensitive configuration is handled through environment variables
-- The bot automatically filters sensitive information from responses
-
-## License
-
-This project is proprietary software. Please refer to your organization's licensing terms.
