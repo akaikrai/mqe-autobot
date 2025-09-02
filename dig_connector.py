@@ -70,7 +70,6 @@ class DIGConnector:
             logger.error(error_msg)
             raise RuntimeError(error_msg)
 
-        # Try common response shapes
         try:
             data = r.json()
         except Exception:

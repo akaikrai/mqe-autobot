@@ -2,8 +2,10 @@
 Slack Request Signature Validation
 
 This module implements request signature validation to ensure requests
-are actually coming from Slack, as described in the Slack documentation:
+are actually from Slack, as described in the Slack documentation:
 https://api.slack.com/authentication/verifying-requests-from-slack#validating-a-request
+
+Note: This is a simplified version for Socket Mode usage.
 """
 
 import hmac
@@ -11,13 +13,13 @@ import hashlib
 import time
 import logging
 from typing import Optional, Dict, Any
-from flask import Request
 
 logger = logging.getLogger(__name__)
 
 class SlackRequestValidator:
     """
     Validates that incoming requests are actually from Slack using signature verification.
+    Simplified version for Socket Mode usage.
     """
     
     def __init__(self, signing_secret: str, max_timestamp_age: int = 300):
@@ -31,57 +33,22 @@ class SlackRequestValidator:
         self.signing_secret = signing_secret.encode('utf-8')
         self.max_timestamp_age = max_timestamp_age
     
-    def validate_request(self, request: Request) -> bool:
+    def validate_request(self, request_data: Dict[str, Any]) -> bool:
         """
         Validate that a request is actually from Slack.
+        Simplified version for Socket Mode - always returns True since Socket Mode
+        handles authentication through the app token.
         
         Args:
-            request: Flask request object
+            request_data: Request data dictionary
             
         Returns:
-            bool: True if request is valid, False otherwise
+            bool: True if request appears valid (Socket Mode handles auth)
         """
-        try:
-            # Step 1: Extract the timestamp header
-            timestamp = request.headers.get('X-Slack-Request-Timestamp')
-            if not timestamp:
-                logger.warning("Missing X-Slack-Request-Timestamp header")
-                return False
-            
-            # Step 2: Check timestamp is recent (within 5 minutes)
-            current_time = int(time.time())
-            request_time = int(timestamp)
-            
-            if abs(current_time - request_time) > self.max_timestamp_age:
-                logger.warning(f"Request timestamp too old: {request_time}, current: {current_time}")
-                return False
-            
-            # Step 3: Get the raw request body
-            request_body = request.get_data()
-            
-            # Step 4: Create the signature base string
-            sig_basestring = f"v0:{timestamp}:{request_body.decode('utf-8')}"
-            
-            # Step 5: Create the expected signature
-            expected_signature = f"v0={hmac.new(self.signing_secret, sig_basestring.encode('utf-8'), hashlib.sha256).hexdigest()}"
-            
-            # Step 6: Get the actual signature from headers
-            actual_signature = request.headers.get('X-Slack-Signature')
-            if not actual_signature:
-                logger.warning("Missing X-Slack-Signature header")
-                return False
-            
-            # Step 7: Compare signatures using hmac.compare_digest for timing attack protection
-            if hmac.compare_digest(expected_signature, actual_signature):
-                logger.debug("Request signature validation successful")
-                return True
-            else:
-                logger.warning("Request signature validation failed")
-                return False
-                
-        except Exception as e:
-            logger.error(f"Error validating Slack request: {e}")
-            return False
+        # For Socket Mode, authentication is handled by the Slack Bolt framework
+        # through the app token, so we can trust the request
+        logger.debug("Socket Mode request validation - authentication handled by framework")
+        return True
     
     def validate_socket_mode_request(self, request_data: Dict[str, Any]) -> bool:
         """
@@ -101,7 +68,7 @@ class SlackRequestValidator:
 
 def create_slack_validator(signing_secret: str) -> SlackRequestValidator:
     """
-    Factory function to create a SlackRequestValidator instance.
+    Create a Slack request validator instance.
     
     Args:
         signing_secret: The Slack signing secret

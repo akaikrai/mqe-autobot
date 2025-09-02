@@ -212,40 +212,49 @@ def clean_response_for_slack(text):
                 title = extract_title_from_url(url)
                 source_links.append((title, url))
     
-    # Find various source link patterns and collect them
-    # Pattern 1: [Source: text](url)
-    source_pattern1 = re.findall(r'\[Source:\s*([^\]]+)\]\((https?://[^\)]+)\)', text, re.IGNORECASE)
-    for title, url in source_pattern1:
-        url = clean_url(url)
-        if url:
-            source_links.append((title.strip(), url))
+    # Simplified source extraction - find all URLs in the text
+    lines = text.split('\n')
+    for line in lines:
+        # Look for URLs in lines that contain "Source:"
+        if 'source:' in line.lower():
+            # Extract ALL URLs from this line, including comma-separated ones
+            # Use a more comprehensive regex that captures the entire line content
+            full_line_content = line.strip()
+            
+            # Find all URLs in the line (this will catch comma-separated URLs)
+            all_urls = re.findall(r'https?://[^\s\)\n]+', full_line_content)
+            
+            # Process each URL found
+            for url in all_urls:
+                # Clean the URL and add to sources
+                cleaned_url = clean_url(url.strip())
+                if cleaned_url:
+                    title = extract_title_from_url(cleaned_url)
+                    source_links.append((title, cleaned_url))
+            
+            # Also look for domain-based URLs without protocol
+            domain_urls = re.findall(r'[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}[^\s\)\n;]*', full_line_content)
+            for potential_url in domain_urls:
+                if any(domain in potential_url.lower() for domain in ['atlassian.net', 'confluence', 'github.com', 'stackoverflow.com']):
+                    # Add https:// if no protocol
+                    if not potential_url.startswith(('http://', 'https://')):
+                        potential_url = 'https://' + potential_url
+                    cleaned_url = clean_url(potential_url)
+                    if cleaned_url:
+                        title = extract_title_from_url(cleaned_url)
+                        source_links.append((title, cleaned_url))
     
-    # Pattern 2: Source: [text](url)
-    source_pattern2 = re.findall(r'Source:\s*\[([^\]]+)\]\((https?://[^\)]+)\)', text, re.IGNORECASE)
-    for title, url in source_pattern2:
-        url = clean_url(url)
-        if url:
-            source_links.append((title.strip(), url))
+    # Remove ALL source-related text from the response body
+    # Remove "Source:" lines completely - this is the key fix
+    text = re.sub(r'Source:\s*.*?(?=\n|$)', '', text, flags=re.IGNORECASE | re.MULTILINE)
     
-    # Pattern 3: (Source: url) patterns
-    source_pattern3 = re.findall(r'\(Source:\s*(https?://[^\)]+)\)', text, re.IGNORECASE)
-    for url in source_pattern3:
-        url = clean_url(url)
-        if url:
-            title = extract_title_from_url(url)
-            source_links.append((title, url))
+    # Remove any remaining broken source patterns that might have slipped through
+    text = re.sub(r'Source:\s*\[+\s*\[*\s*$', '', text, flags=re.IGNORECASE | re.MULTILINE)
+    text = re.sub(r'Source:\s*\[+\s*\[*\s*\n', '', text, flags=re.IGNORECASE | re.MULTILINE)
     
-    # Remove ALL inline source citations from the text
-    # Remove formal source patterns since we'll collect the URLs separately
-    text = re.sub(r'\[Source:\s*[^\]]+\]\(https?://[^\)]+\)', '', text, flags=re.IGNORECASE)
-    text = re.sub(r'Source:\s*\[[^\]]+\]\(https?://[^\)]+\)', '', text, flags=re.IGNORECASE)
-    # Remove inline (Source: url) patterns - comprehensive removal
-    text = re.sub(r'\(Source:\s*[^\)]*https?://[^\)]*\)', '', text, flags=re.IGNORECASE)
-    # Remove patterns like (Source: `url`)
-    text = re.sub(r'\(Source:\s*`[^`]*`\)', '', text, flags=re.IGNORECASE)
-    # Remove any remaining source references with URLs
-    text = re.sub(r'Source:\s*https?://[^\s\)]+', '', text, flags=re.IGNORECASE)
-    text = re.sub(r'\(Source:[^)]*\)', '', text, flags=re.IGNORECASE)
+    # Remove any remaining URLs from the response body
+    text = re.sub(r'https?://[^\s\n]+', '', text)
+    
     # Remove "according to" patterns with empty spaces
     text = re.sub(r'\(according to\s*\)\s*:?', '', text, flags=re.IGNORECASE)
     text = re.sub(r'according to\s*:', '', text, flags=re.IGNORECASE)
@@ -254,7 +263,14 @@ def clean_response_for_slack(text):
     text = re.sub(r'\*', '', text)
     
     # Format numbered sections: put numbered items on separate lines with extra spacing
-    text = re.sub(r'^(\d+\.\s+[^:]+:)\s*', r'\n\1\n', text, flags=re.MULTILINE)
+    # Handle numbered sections that appear in the middle of paragraphs
+    text = re.sub(r'([.!?])\s+(\d+\.\s+[^:]+:)', r'\1\n\n\2', text)
+    
+    # Also handle cases where numbered sections start without proper punctuation
+    text = re.sub(r'(\w)\s+(\d+\.\s+[^:]+:)', r'\1\n\n\2', text)
+    
+    # Ensure numbered sections have proper spacing
+    text = re.sub(r'(\d+\.\s+[^:]+:)', r'\n\1\n', text)
     
     # Remove naked URLs from the response body AFTER collecting them for sources
     text = re.sub(r'https?://[^\s\n]+', '', text)
@@ -269,17 +285,19 @@ def clean_response_for_slack(text):
     
     # Add source links section at the end if we found any
     if source_links:
-        # Remove duplicates while preserving order
+        # Remove duplicates while preserving order - normalize URLs first
         unique_sources = []
         seen_urls = set()
         for title, url in source_links:
-            if url not in seen_urls:
-                unique_sources.append((title, url))
-                seen_urls.add(url)
+            # Normalize URL by removing trailing semicolons and other punctuation
+            normalized_url = url.rstrip(';.,!?').strip()
+            if normalized_url not in seen_urls:
+                unique_sources.append((title, normalized_url))
+                seen_urls.add(normalized_url)
         
         if unique_sources:
             text += '\n\n' + '─' * 40 + '\n'
-            text += '📚 Sources:\n'
+            text += '\U0001F4DA Sources:\n'
             for i, (title, url) in enumerate(unique_sources, 1):
                 # Use naked links for Atlassian/Confluence, otherwise use titles
                 if 'atlassian' in url.lower() or 'confluence' in url.lower():
@@ -315,6 +333,10 @@ def handle_app_mentions(body, say, client):
     event = body.get("event", {})
     logger.info(f"App mention event details: channel={event.get('channel')}, user={event.get('user')}, ts={event.get('ts')}")
     logger.debug(f"App mention event text: {event.get('text', '')}")
+    
+    # Add unique identifier for debugging duplicates
+    event_id = body.get("event_id", "no_event_id")
+    logger.info(f"Processing app mention event ID: {event_id}")
     
     # Skip if we've processed this message recently
     if not should_process_message(event, processed_messages):
@@ -513,6 +535,10 @@ def handle_dm_messages(body, say, client):
     if event.get("channel_type") != "im":
         logger.debug(f"Ignoring non-DM message: channel_type={event.get('channel_type')}")
         return
+    
+    # Add unique identifier for debugging duplicates
+    event_id = body.get("event_id", "no_event_id")
+    logger.info(f"Processing DM event ID: {event_id}")
     
     logger.info(f"DM Event details: channel={event.get('channel')}, user={event.get('user')}, ts={event.get('ts')}")
     logger.debug(f"DM Event text: {event.get('text', '')}")
